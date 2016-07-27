@@ -24,9 +24,11 @@ import microsoft.exchange.webservices.data.credential.WebCredentials
 import microsoft.exchange.webservices.data.search.CalendarView
 import com.typesafe.config.Config
 
-case class Appointment(startDate: Date, endDate: Date, subject: String, location: String, body: String, googleId: Option[String] = None) {
+case class Appointment(
+    startDate: Date, endDate: Date, subject: String, location: String,
+    body: String, isAllDay: Boolean, googleId: Option[String] = None) {
 
-  override def toString = s"($startDate - $endDate) @ $location -> $subject"
+  override def toString = s"${if (isAllDay) "A" else " "}($startDate - $endDate) @ $location -> $subject"
 
   override def equals(obj: Any) = obj match {
     case other: Appointment =>
@@ -81,7 +83,9 @@ object Secretaresse extends App {
       val subject = Option(appt.getSubject) getOrElse ""
       val location = Option(appt.getLocation) getOrElse ""
       val body = Option(appt.getBody.toString) getOrElse ""
-      Appointment(appt.getStart, appt.getEnd, subject, location, body)
+      val isAllDay = appt.getIsAllDayEvent
+      val app = Appointment(appt.getStart, appt.getEnd, subject, location, body, isAllDay)
+      app
     }
     appointments.toSet
   }
@@ -132,7 +136,9 @@ object Secretaresse extends App {
       val summary = Option(event.getSummary) getOrElse ""
       val location = Option(event.getLocation) getOrElse ""
       val description = Option(event.getDescription) getOrElse ""
-      Appointment(new Date(start.getValue), new Date(end.getValue), summary, location, description, Some(event.getId))
+      val isAllDay = event.getStart.getDateTime == null
+      val app = Appointment(new Date(start.getValue), new Date(end.getValue), summary, location, description, isAllDay, Some(event.getId))
+      app
     }
     appointments.toSet
   }
@@ -147,9 +153,8 @@ object Secretaresse extends App {
   def addAppointmentsToGoogle(service: Calendar, calendarId: String, toAdd: Set[Appointment]): Unit = {
     val events = toAdd map { appt =>
       new Event()
-        // TODO: use .setDate for All-day events
-        .setStart(new EventDateTime().setDateTime(new DateTime(appt.startDate)))
-        .setEnd(new EventDateTime().setDateTime(new DateTime(appt.endDate)))
+        .setStart(eventDate(appt.startDate, appt.isAllDay))
+        .setEnd(eventDate(appt.endDate, appt.isAllDay))
         .setSummary(appt.subject)
         .setLocation(appt.location)
         .setDescription(appt.body)
@@ -159,29 +164,39 @@ object Secretaresse extends App {
     }
   }
 
+  def eventDate(date: Date, isAllDay: Boolean): EventDateTime =
+    if (isAllDay)
+      new EventDateTime().setDate(new DateTime(true, date.getTime, 0))
+    else
+      new EventDateTime().setDateTime(new DateTime(date))
+
   def toRemove(source: Set[Appointment], target: Set[Appointment]): Set[Appointment] = target -- source
   def toAdd(source: Set[Appointment], target: Set[Appointment]): Set[Appointment] = source -- target
 
+  def run(): Unit = {
+    val config = loadConfig
 
-  val config = loadConfig
+    val (startDate, endDate) = window(config.getInt("app.pastDays"), config.getInt("app.futureDays"))
 
-  val (startDate, endDate) = window(config.getInt("app.pastDays"), config.getInt("app.futureDays"))
+    println("Getting events from Exchange...")
+    val exchange = getAppointmentsFromExchange(config, startDate, endDate)
+    println("Connecting to Google...")
+    val calendarService = buildGoogleCalendarService(config)
+    val calendarId = getCalendarId(calendarService, config.getString("google.calendarName"))
+    println("Getting events from Google...")
+    val google = getAppointmentsFromGoogle(calendarService, calendarId, startDate, endDate)
 
-  println("Getting events from Exchange...")
-  val exchange = getAppointmentsFromExchange(config, startDate, endDate)
-  println("Connecting to Google...")
-  val calendarService = buildGoogleCalendarService(config)
-  val calendarId = getCalendarId(calendarService, config.getString("google.calendarName"))
-  println("Getting events from Google...")
-  val google = getAppointmentsFromGoogle(calendarService, calendarId, startDate, endDate)
+    val itemsToRemove = toRemove(exchange, google)
+    println(s"Removing ${itemsToRemove.size} events from Google...")
+    itemsToRemove foreach println
+    removeAppointmentsFromGoogle(calendarService, calendarId, itemsToRemove)
 
-  val itemsToRemove = toRemove(exchange, google)
-  println(s"Removing ${itemsToRemove.size} events from Google...")
-  itemsToRemove foreach println
-  removeAppointmentsFromGoogle(calendarService, calendarId, itemsToRemove)
+    val itemsToAdd = toAdd(exchange, google)
+    println(s"Adding ${itemsToAdd.size} events to Google...")
+    itemsToAdd foreach println
+    addAppointmentsToGoogle(calendarService, calendarId, itemsToAdd)
+  }
 
-  val itemsToAdd = toAdd(exchange, google)
-  println(s"Adding ${itemsToAdd.size} events to Google...")
-  itemsToAdd foreach println
-  addAppointmentsToGoogle(calendarService, calendarId, itemsToAdd)
+  run()
 }
+
