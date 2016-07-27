@@ -2,7 +2,7 @@ package nl.jqno.secretaresse
 
 import java.io.{File, FileReader}
 import java.net.URI
-import java.util.{Date, GregorianCalendar}
+import java.util.{TimeZone, Date, GregorianCalendar}
 
 import scala.collection.JavaConverters._
 
@@ -15,14 +15,13 @@ import com.google.api.client.util.DateTime
 import com.google.api.client.util.store.FileDataStoreFactory
 import com.google.api.services.calendar.{Calendar, CalendarScopes}
 import com.google.api.services.calendar.model.{Event, EventDateTime}
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ConfigFactory, Config}
 import microsoft.exchange.webservices.data.core.{ExchangeService, PropertySet}
 import microsoft.exchange.webservices.data.core.enumeration.misc.ExchangeVersion
 import microsoft.exchange.webservices.data.core.enumeration.property.{BasePropertySet, BodyType, WellKnownFolderName}
 import microsoft.exchange.webservices.data.core.service.folder.CalendarFolder
 import microsoft.exchange.webservices.data.credential.WebCredentials
 import microsoft.exchange.webservices.data.search.CalendarView
-import com.typesafe.config.Config
 
 case class Appointment(
     startDate: Date, endDate: Date, subject: String, location: String,
@@ -166,9 +165,21 @@ object Secretaresse extends App {
 
   def eventDate(date: Date, isAllDay: Boolean): EventDateTime =
     if (isAllDay)
-      new EventDateTime().setDate(new DateTime(true, date.getTime, 0))
+      new EventDateTime().setDate(new DateTime(true, toUtc(date).getTime, 0))
     else
       new EventDateTime().setDateTime(new DateTime(date))
+
+  def toUtc(date: Date): Date = {
+    val result = new GregorianCalendar(TimeZone.getTimeZone("UTC"))
+    result.set(java.util.Calendar.YEAR, date.getYear + 1900)
+    result.set(java.util.Calendar.MONTH, date.getMonth)
+    result.set(java.util.Calendar.DATE, date.getDate)
+    result.set(java.util.Calendar.HOUR, 0)
+    result.set(java.util.Calendar.MINUTE, 0)
+    result.set(java.util.Calendar.SECOND, 0)
+    result.set(java.util.Calendar.MILLISECOND, 0)
+    result.getTime
+  }
 
   def toRemove(source: Set[Appointment], target: Set[Appointment]): Set[Appointment] = target -- source
   def toAdd(source: Set[Appointment], target: Set[Appointment]): Set[Appointment] = source -- target
