@@ -2,6 +2,7 @@ package nl.jqno.secretaresse
 
 import java.io.{File, FileReader}
 import java.net.URI
+import java.text.SimpleDateFormat
 import java.util.{TimeZone, Date, GregorianCalendar}
 
 import scala.collection.JavaConverters._
@@ -15,7 +16,7 @@ import com.google.api.client.util.DateTime
 import com.google.api.client.util.store.FileDataStoreFactory
 import com.google.api.services.calendar.{Calendar, CalendarScopes}
 import com.google.api.services.calendar.model.{Event, EventDateTime}
-import com.typesafe.config.{ConfigFactory, Config}
+import com.typesafe.config.{Config, ConfigFactory}
 import microsoft.exchange.webservices.data.core.{ExchangeService, PropertySet}
 import microsoft.exchange.webservices.data.core.enumeration.misc.ExchangeVersion
 import microsoft.exchange.webservices.data.core.enumeration.property.{BasePropertySet, BodyType, WellKnownFolderName}
@@ -27,7 +28,7 @@ case class Appointment(
     startDate: Date, endDate: Date, subject: String, location: String,
     body: String, isAllDay: Boolean, googleId: Option[String] = None) {
 
-  override def toString = s"${if (isAllDay) "A" else " "}($startDate - $endDate) @ $location -> $subject"
+  override def toString = s"${if (googleId.isDefined) "GOOGLE" else "EXCHNG"}  ${if (isAllDay) "A" else " "}($startDate - $endDate) @ $location -> $subject"
 
   override def equals(obj: Any) = obj match {
     case other: Appointment =>
@@ -83,8 +84,7 @@ object Secretaresse extends App {
       val location = Option(appt.getLocation) getOrElse ""
       val body = Option(appt.getBody.toString) getOrElse ""
       val isAllDay = appt.getIsAllDayEvent
-      val app = Appointment(appt.getStart, appt.getEnd, subject, location, body, isAllDay)
-      app
+      Appointment(appt.getStart, appt.getEnd, subject, location, body, isAllDay)
     }
     appointments.toSet
   }
@@ -130,16 +130,26 @@ object Secretaresse extends App {
         .getItems.asScala
 
     val appointments = events map { event =>
-      val start = Option(event.getStart.getDateTime) getOrElse event.getStart.getDate
-      val end = Option(event.getEnd.getDateTime) getOrElse event.getEnd.getDate
+      val start = getGoogleDate(event.getStart)
+      val end = getGoogleDate(event.getEnd)
       val summary = Option(event.getSummary) getOrElse ""
       val location = Option(event.getLocation) getOrElse ""
       val description = Option(event.getDescription) getOrElse ""
       val isAllDay = event.getStart.getDateTime == null
-      val app = Appointment(new Date(start.getValue), new Date(end.getValue), summary, location, description, isAllDay, Some(event.getId))
-      app
+      Appointment(new Date(start.getValue), new Date(end.getValue), summary, location, description, isAllDay, Some(event.getId))
     }
     appointments.toSet
+  }
+
+  def getGoogleDate(edt: EventDateTime): DateTime = {
+    Option(edt.getDateTime) match {
+      case Some(dt) => dt
+      case None =>
+        val millis = edt.getDate.getValue
+        val offset = TimeZone.getDefault.getOffset(millis)
+        val unTimezoned = millis - offset
+        new DateTime(new Date(unTimezoned), TimeZone.getDefault)
+    }
   }
 
   def removeAppointmentsFromGoogle(service: Calendar, calendarId: String, toRemove: Set[Appointment]): Unit = {
@@ -164,22 +174,14 @@ object Secretaresse extends App {
   }
 
   def eventDate(date: Date, isAllDay: Boolean): EventDateTime =
-    if (isAllDay)
-      new EventDateTime().setDate(new DateTime(true, toUtc(date).getTime, 0))
-    else
+    if (isAllDay) {
+      val format = new SimpleDateFormat("yyyy-MM-dd")
+      val string = format.format(date)
+      val dt = new DateTime(string)
+      new EventDateTime().setDate(dt)
+    } else {
       new EventDateTime().setDateTime(new DateTime(date))
-
-  def toUtc(date: Date): Date = {
-    val result = new GregorianCalendar(TimeZone.getTimeZone("UTC"))
-    result.set(java.util.Calendar.YEAR, date.getYear + 1900)
-    result.set(java.util.Calendar.MONTH, date.getMonth)
-    result.set(java.util.Calendar.DATE, date.getDate)
-    result.set(java.util.Calendar.HOUR, 0)
-    result.set(java.util.Calendar.MINUTE, 0)
-    result.set(java.util.Calendar.SECOND, 0)
-    result.set(java.util.Calendar.MILLISECOND, 0)
-    result.getTime
-  }
+    }
 
   def toRemove(source: Set[Appointment], target: Set[Appointment]): Set[Appointment] = target -- source
   def toAdd(source: Set[Appointment], target: Set[Appointment]): Set[Appointment] = source -- target
