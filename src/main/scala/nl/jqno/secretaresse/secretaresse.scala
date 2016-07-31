@@ -3,9 +3,8 @@ package nl.jqno.secretaresse
 import java.io.{File, FileReader}
 import java.net.URI
 import java.text.SimpleDateFormat
-import java.util.{TimeZone, Date, GregorianCalendar}
-
-import scala.collection.JavaConverters._
+import java.time.{LocalDate, ZoneId}
+import java.util.{Date, TimeZone}
 
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver
@@ -14,15 +13,17 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.client.util.DateTime
 import com.google.api.client.util.store.FileDataStoreFactory
-import com.google.api.services.calendar.{Calendar, CalendarScopes}
 import com.google.api.services.calendar.model.{Event, EventDateTime}
+import com.google.api.services.calendar.{Calendar, CalendarScopes}
 import com.typesafe.config.{Config, ConfigFactory}
-import microsoft.exchange.webservices.data.core.{ExchangeService, PropertySet}
 import microsoft.exchange.webservices.data.core.enumeration.misc.ExchangeVersion
 import microsoft.exchange.webservices.data.core.enumeration.property.{BasePropertySet, BodyType, WellKnownFolderName}
 import microsoft.exchange.webservices.data.core.service.folder.CalendarFolder
+import microsoft.exchange.webservices.data.core.{ExchangeService, PropertySet}
 import microsoft.exchange.webservices.data.credential.WebCredentials
 import microsoft.exchange.webservices.data.search.CalendarView
+
+import scala.collection.JavaConverters._
 
 case class Appointment(
     startDate: Date, endDate: Date, subject: String, location: String,
@@ -59,16 +60,16 @@ object Secretaresse extends App {
     ConfigFactory.load(externalConfig)
   }
 
-  def window(daysPast: Int, daysFuture: Int): (Date, Date) = {
-    val now = new GregorianCalendar()
-    val start = now.clone().asInstanceOf[GregorianCalendar]
-    start.add(java.util.Calendar.DATE, -daysPast)
-    val end = now.clone().asInstanceOf[GregorianCalendar]
-    end.add(java.util.Calendar.DATE, daysFuture)
-    (start.getTime, end.getTime)
+  def window(daysPast: Int, daysFuture: Int): (LocalDate, LocalDate) = {
+    val start: LocalDate = LocalDate.now().minusDays(daysPast)
+    val end: LocalDate = LocalDate.now().plusDays(daysFuture)
+
+    (start, end)
   }
 
-  def getAppointmentsFromExchange(config: Config, from: Date, to: Date): Set[Appointment] = {
+  def localDateToDate(ld: LocalDate): Date = Date.from(ld.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant)
+
+  def getAppointmentsFromExchange(config: Config, from: LocalDate, to: LocalDate): Set[Appointment] = {
     val service = new ExchangeService(ExchangeVersion.Exchange2010_SP2)
     val credentials = new WebCredentials(config.getString("exchange.userName"), config.getString("exchange.password"))
     service.setCredentials(credentials)
@@ -76,7 +77,7 @@ object Secretaresse extends App {
     val propertySet = new PropertySet(BasePropertySet.FirstClassProperties)
     propertySet.setRequestedBodyType(BodyType.Text)
     val cf = CalendarFolder.bind(service, WellKnownFolderName.Calendar)
-    val results = cf.findAppointments(new CalendarView(from, to)).getItems.asScala
+    val results = cf.findAppointments(new CalendarView(localDateToDate(from), localDateToDate(to))).getItems.asScala
 
     val appointments = results map { appt =>
       appt.load(propertySet)
@@ -119,11 +120,14 @@ object Secretaresse extends App {
     calendars.find(_.getSummary == name).get.getId
   }
 
-  def getAppointmentsFromGoogle(service: Calendar, calendarId: String, from: Date, to: Date): Set[Appointment] = {
+  def getAppointmentsFromGoogle(service: Calendar, calendarId: String, from: LocalDate, to: LocalDate): Set[Appointment] = {
     // list the next 10 items from the specified calendar
+    service.events().list(calendarId).setFields()
+
+
     val events = service.events.list(calendarId)
-        .setTimeMin(new DateTime(from))
-        .setTimeMax(new DateTime(to))
+        .setTimeMin(new DateTime(localDateToDate(from)))
+        .setTimeMax(new DateTime(localDateToDate(to)))
         .setOrderBy("startTime")
         .setSingleEvents(true)
         .execute()
@@ -193,6 +197,7 @@ object Secretaresse extends App {
 
     println("Getting events from Exchange...")
     val exchange = getAppointmentsFromExchange(config, startDate, endDate)
+
     println("Connecting to Google...")
     val calendarService = buildGoogleCalendarService(config)
     val calendarId = getCalendarId(calendarService, config.getString("google.calendarName"))
