@@ -28,3 +28,11 @@ You need to set up a couple of things before you can run this code.
 
 * Run the program with `sbt run`.
 
+### Periodically run Secretaresse with Hammerspoon
+To run Secretaresse periodically, simply include the hammerspoon `secretaresse.lua` to your `init.lua` script.
+```
+dofile(<Absolute-path> .. "/secretaresse/secretaresse.lua")
+
+-- Or place secretaresse.lua in your hammerspoon dir and import it with:
+require('secretaresse')
+```
