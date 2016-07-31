@@ -13,14 +13,16 @@ You need to set up a couple of things before you can run this code.
 
 * You need to create a file called `application.conf` in the root folder of the project. It needs to look like this:
 
-      exchange {
-        userName = "your.emailaddress@employer.com"
-        password = "sup3r s3cr3t p4ssw0rd g03s h3r3"
-      }
+```
+  exchange {
+    userName = "your.emailaddress@employer.com"
+    password = "sup3r s3cr3t p4ssw0rd g03s h3r3"
+  }
 
-      google {
-        calendarName = "the name of the calendar you just created"
-      }
+  google {
+    calendarName = "the name of the calendar you just created"
+  }
+```
 
 * Did you remember to create a new Google Calendar? You'll lose your data if you don't! There is no undo.
 
