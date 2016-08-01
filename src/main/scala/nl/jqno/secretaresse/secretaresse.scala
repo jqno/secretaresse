@@ -122,9 +122,6 @@ object Secretaresse extends App {
 
   def getAppointmentsFromGoogle(service: Calendar, calendarId: String, from: LocalDate, to: LocalDate): Set[Appointment] = {
     // list the next 10 items from the specified calendar
-    service.events().list(calendarId).setFields()
-
-
     val events = service.events.list(calendarId)
         .setTimeMin(new DateTime(localDateToDate(from)))
         .setTimeMax(new DateTime(localDateToDate(to)))
