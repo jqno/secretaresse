@@ -20,8 +20,9 @@ function stopTimer()
 end
 
 function startTimer(minutes)
+  stopTimer()
   local seconds = hs.timer.minutes(minutes)
-  timer = hs.timer.doEvery(seconds, function() hs.alert('timer callback'); runSecretaresse() end)
+  timer = hs.timer.doEvery(seconds, function() runSecretaresse() end)
   secretaresseMenubar:setTooltip('Secretaresse - Running every ' .. minutes .. ' minutes')
 end
 
