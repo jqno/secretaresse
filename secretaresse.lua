@@ -9,6 +9,7 @@ secretaresseMenubar:setMenu({
   {title = "Run now", fn = function() runSecretaresse() end},
   {title = "Schedule every 5 minutes", fn = function() startTimer(5) end},
   {title = "Schedule every 30 minutes", fn = function() startTimer(30) end},
+  {title = "Schedule every 2 hours", fn = function() startTimer(120) end},
   {title = "Turn off", fn = function() stopTimer() end}
 })
 
