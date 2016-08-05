@@ -2,7 +2,6 @@
 
 This tool is your personal secretary: she keeps your Google Calendar in sync with your Exchange calendar!
 
-
 # Getting started
 
 You need to set up a couple of things before you can run this code.
