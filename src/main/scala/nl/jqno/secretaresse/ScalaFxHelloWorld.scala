@@ -1,5 +1,9 @@
 package nl.jqno.secretaresse
 
+import java.net.URL
+
+import dorkbox.systemTray.SystemTray
+
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
 import scalafx.scene.Scene
@@ -29,10 +33,21 @@ object ScalaFxHelloWorld extends JFXApp {
       }
     }
 
+  def systemTray() = {
+    val systemTray = SystemTray.getSystemTray
+    if (systemTray == null) {
+      throw new RuntimeException("Unable to load SystemTray!")
+    }
+    systemTray.setIcon(new URL("http://www.dijklandfm.nl/wp-content/uploads/test.png"))
+    systemTray.setStatus("Not Running")
+  }
+
     stage = new PrimaryStage {
       title = "Secretaresse App"
       scene = new Scene {
         content = createMenu()
       }
     }
+
+  systemTray()
 }
