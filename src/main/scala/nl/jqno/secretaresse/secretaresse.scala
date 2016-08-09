@@ -50,26 +50,26 @@ case class Appointment(
   }
 }
 
-object Secretaresse extends App {
+class Secretaresse {
 
-  def loadConfig: Config = {
+  private def loadConfig: Config = {
     // TODO: ceedubs ficus
-    val location = args.headOption getOrElse "application.conf"
+    val location = "application.conf"
     println(s"Loading $location")
     val externalConfig = ConfigFactory.parseFile(new File(location))
     ConfigFactory.load(externalConfig)
   }
 
-  def window(daysPast: Int, daysFuture: Int): (LocalDate, LocalDate) = {
+  private def window(daysPast: Int, daysFuture: Int): (LocalDate, LocalDate) = {
     val start: LocalDate = LocalDate.now().minusDays(daysPast)
     val end: LocalDate = LocalDate.now().plusDays(daysFuture)
 
     (start, end)
   }
 
-  def localDateToDate(ld: LocalDate): Date = Date.from(ld.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant)
+  private def localDateToDate(ld: LocalDate): Date = Date.from(ld.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant)
 
-  def getAppointmentsFromExchange(config: Config, from: LocalDate, to: LocalDate): Set[Appointment] = {
+  private def getAppointmentsFromExchange(config: Config, from: LocalDate, to: LocalDate): Set[Appointment] = {
     val service = new ExchangeService(ExchangeVersion.Exchange2010_SP2)
     val credentials = new WebCredentials(config.getString("exchange.userName"), config.getString("exchange.password"))
     service.setCredentials(credentials)
@@ -90,7 +90,7 @@ object Secretaresse extends App {
     appointments.toSet
   }
 
-  def buildGoogleCalendarService(config: Config): Calendar = {
+  private def buildGoogleCalendarService(config: Config): Calendar = {
     // global initializations
     val jsonFactory = JacksonFactory.getDefaultInstance
     val httpTransport = GoogleNetHttpTransport.newTrustedTransport
@@ -115,12 +115,12 @@ object Secretaresse extends App {
         .build
   }
 
-  def getCalendarId(service: Calendar, name: String): String = {
+  private def getCalendarId(service: Calendar, name: String): String = {
     val calendars = service.calendarList.list.execute().getItems.asScala
     calendars.find(_.getSummary == name).get.getId
   }
 
-  def getAppointmentsFromGoogle(service: Calendar, calendarId: String, from: LocalDate, to: LocalDate): Set[Appointment] = {
+  private def getAppointmentsFromGoogle(service: Calendar, calendarId: String, from: LocalDate, to: LocalDate): Set[Appointment] = {
     // list the next 10 items from the specified calendar
     val events = service.events.list(calendarId)
         .setTimeMin(new DateTime(localDateToDate(from)))
@@ -142,7 +142,7 @@ object Secretaresse extends App {
     appointments.toSet
   }
 
-  def getGoogleDate(edt: EventDateTime): DateTime = {
+  private def getGoogleDate(edt: EventDateTime): DateTime = {
     Option(edt.getDateTime) match {
       case Some(dt) => dt
       case None =>
@@ -153,14 +153,14 @@ object Secretaresse extends App {
     }
   }
 
-  def removeAppointmentsFromGoogle(service: Calendar, calendarId: String, toRemove: Set[Appointment]): Unit = {
+  private def removeAppointmentsFromGoogle(service: Calendar, calendarId: String, toRemove: Set[Appointment]): Unit = {
     toRemove foreach { appt => appt.googleId match {
       case Some(id) => service.events.delete(calendarId, id).execute()
       case _ => // do nothing
     }}
   }
 
-  def addAppointmentsToGoogle(service: Calendar, calendarId: String, toAdd: Set[Appointment]): Unit = {
+  private def addAppointmentsToGoogle(service: Calendar, calendarId: String, toAdd: Set[Appointment]): Unit = {
     val events = toAdd map { appt =>
       new Event()
         .setStart(eventDate(appt.startDate, appt.isAllDay))
@@ -174,7 +174,7 @@ object Secretaresse extends App {
     }
   }
 
-  def eventDate(date: Date, isAllDay: Boolean): EventDateTime =
+  private def eventDate(date: Date, isAllDay: Boolean): EventDateTime =
     if (isAllDay) {
       val format = new SimpleDateFormat("yyyy-MM-dd")
       val string = format.format(date)
@@ -184,8 +184,8 @@ object Secretaresse extends App {
       new EventDateTime().setDateTime(new DateTime(date))
     }
 
-  def toRemove(source: Set[Appointment], target: Set[Appointment]): Set[Appointment] = target -- source
-  def toAdd(source: Set[Appointment], target: Set[Appointment]): Set[Appointment] = source -- target
+  private def toRemove(source: Set[Appointment], target: Set[Appointment]): Set[Appointment] = target -- source
+  private def toAdd(source: Set[Appointment], target: Set[Appointment]): Set[Appointment] = source -- target
 
   def run(): Unit = {
     val config = loadConfig
@@ -211,7 +211,5 @@ object Secretaresse extends App {
     itemsToAdd foreach println
     addAppointmentsToGoogle(calendarService, calendarId, itemsToAdd)
   }
-
-  run()
 }
 

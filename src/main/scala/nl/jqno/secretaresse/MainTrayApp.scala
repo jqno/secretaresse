@@ -7,17 +7,17 @@ import java.net.URL
 
 object MainTrayApp {
 
-  def main(args: Array[String]): Unit = {
+  //In order to not show a dock item we need to use this I think: http://stackoverflow.com/questions/5057639/systemtray-based-application-without-window-on-mac-os-x
 
+  val secretaresse: Secretaresse = new Secretaresse
+
+  def main(args: Array[String]): Unit = {
     val popup: PopupMenu = new PopupMenu()
-    popup.add(createMenuItem("Run now", e => print("Run now")))
-    popup.add(createMenuItem("Schedule every 5 minutes", e => print("Schedule every 5 minutes")))
-    popup.add(createMenuItem("Schedule every 30 minutes", e => print("Schedule every 30 minutes")))
-    popup.add(createMenuItem("Turn off", e => print("Turn off")))
+    popup.add(createMenuItem("Run now", e => secretaresse.run()))
     popup.addSeparator()
     popup.add(createMenuItem("Quit", e => System.exit(0)))
 
-    val image: Image = Toolkit.getDefaultToolkit.getImage(new URL("http://www.dijklandfm.nl/wp-content/uploads/test.png"))
+    val image: Image = Toolkit.getDefaultToolkit.getImage(new URL("https://github.com/encharm/Font-Awesome-SVG-PNG/blob/master/white/png/64/calendar-check-o.png?raw=true"))
     val trayIcon: TrayIcon = new TrayIcon(image, "Secretaresse app", popup)
     trayIcon.setImageAutoSize(true)
 
