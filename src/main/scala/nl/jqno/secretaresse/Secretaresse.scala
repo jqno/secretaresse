@@ -6,31 +6,9 @@ import java.util.{Date, GregorianCalendar, TimeZone}
 
 import com.typesafe.config.{Config, ConfigFactory}
 
-object Secretaresse extends App {
-
-  def loadConfig: Config = {
-    // TODO: ceedubs ficus
-    val location = args.headOption getOrElse "application.conf"
-    println(s"Loading $location")
-    val externalConfig = ConfigFactory.parseFile(new File(location))
-    ConfigFactory.load(externalConfig)
-  }
-
-  def window(daysPast: Int, daysFuture: Int): (Date, Date) = {
-    val now = new GregorianCalendar()
-    val start = now.clone().asInstanceOf[GregorianCalendar]
-    start.add(java.util.Calendar.DATE, -daysPast)
-    val end = now.clone().asInstanceOf[GregorianCalendar]
-    end.add(java.util.Calendar.DATE, daysFuture)
-    (start.getTime, end.getTime)
-  }
-
-  def toRemove(source: Set[Appointment], target: Set[Appointment]): Set[Appointment] = target -- source
-  def toAdd(source: Set[Appointment], target: Set[Appointment]): Set[Appointment] = source -- target
-
-  def run(): Unit = {
+class Secretaresse(configLocation: String) {
+  def sync(): Unit = {
     val config = loadConfig
-
     val (startDate, endDate) = window(config.getInt("app.pastDays"), config.getInt("app.futureDays"))
 
     println("Getting events from Exchange...")
@@ -54,6 +32,23 @@ object Secretaresse extends App {
     google.addAppointments(calendarId, itemsToAdd)
   }
 
-  run()
+  private def loadConfig: Config = {
+    // TODO: ceedubs ficus
+    println(s"Loading $configLocation")
+    val externalConfig = ConfigFactory.parseFile(new File(configLocation))
+    ConfigFactory.load(externalConfig)
+  }
+
+  private def window(daysPast: Int, daysFuture: Int): (Date, Date) = {
+    val now = new GregorianCalendar()
+    val start = now.clone().asInstanceOf[GregorianCalendar]
+    start.add(java.util.Calendar.DATE, -daysPast)
+    val end = now.clone().asInstanceOf[GregorianCalendar]
+    end.add(java.util.Calendar.DATE, daysFuture)
+    (start.getTime, end.getTime)
+  }
+
+  def toRemove(source: Set[Appointment], target: Set[Appointment]): Set[Appointment] = target -- source
+  def toAdd(source: Set[Appointment], target: Set[Appointment]): Set[Appointment] = source -- target
 }
 
