@@ -1,3 +1,5 @@
+[![Build Status](https://img.shields.io/travis/jqno/secretaresse.svg?style=plastic)](https://travis-ci.org/jqno/secretaresse)
+
 # Secretaresse
 
 This tool is your personal secretary: she keeps your Google Calendar in sync with your Exchange calendar!
