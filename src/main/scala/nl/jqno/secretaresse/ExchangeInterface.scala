@@ -14,24 +14,25 @@ import microsoft.exchange.webservices.data.credential.WebCredentials
 import microsoft.exchange.webservices.data.search.CalendarView
 
 class ExchangeInterface(config: Config) {
+
   def getAppointments(from: Date, to: Date): Set[Appointment] = {
     val service = new ExchangeService(ExchangeVersion.Exchange2010_SP2)
     val credentials = new WebCredentials(config.getString("exchange.userName"), config.getString("exchange.password"))
     service.setCredentials(credentials)
     service.setUrl(new URI(config.getString("exchange.url")))
+
     val propertySet = new PropertySet(BasePropertySet.FirstClassProperties)
     propertySet.setRequestedBodyType(BodyType.Text)
     val cf = CalendarFolder.bind(service, WellKnownFolderName.Calendar)
     val results = cf.findAppointments(new CalendarView(from, to)).getItems.asScala
 
-    val appointments = results map { appt =>
+    results.map(appt => {
       appt.load(propertySet)
       val subject = Option(appt.getSubject) getOrElse ""
       val location = Option(appt.getLocation) getOrElse ""
       val body = Option(appt.getBody.toString) getOrElse ""
       val isAllDay = appt.getIsAllDayEvent
       Appointment(appt.getStart, appt.getEnd, subject, location, body, isAllDay)
-    }
-    appointments.toSet
+    }).toSet
   }
 }
