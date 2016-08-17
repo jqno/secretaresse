@@ -1,10 +1,12 @@
 package nl.jqno.secretaresse
 
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.{Date, GregorianCalendar, TimeZone}
+import java.util.{Date, GregorianCalendar}
 
 import com.typesafe.config.{Config, ConfigFactory}
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class Secretaresse(configLocation: String) {
   def sync(): Unit = {
@@ -13,7 +15,7 @@ class Secretaresse(configLocation: String) {
 
     println("Getting events from Exchange...")
     val exchange = new ExchangeInterface(config)
-    val exchangeAppointments = exchange.getAppointments(startDate, endDate)
+    val exchangeAppointments = Await.result(exchange.getAppointments(startDate, endDate), 60.seconds)
 
     println("Connecting to Google...")
     val google = new GoogleInterface(config)
