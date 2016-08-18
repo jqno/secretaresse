@@ -55,6 +55,8 @@ class GoogleInterface(config: Config) {
   }
 
   def getAppointments(calendarId: String, from: Date, to: Date): Future[Set[Appointment]] = {
+    println("Getting events from Google...")
+
     // list the next 10 items from the specified calendar
     val events = async {
       service.events.list(calendarId)
@@ -93,6 +95,9 @@ class GoogleInterface(config: Config) {
   }
 
   def removeAppointments(calendarId: String, toRemove: Set[Appointment]): Future[Unit] = {
+    println(s"Removing ${toRemove.size} events from Google...")
+    toRemove.foreach(println)
+
     val ids = for {
       appt <- toRemove
       id <- appt.googleId
@@ -104,6 +109,9 @@ class GoogleInterface(config: Config) {
   }
 
   def addAppointments(calendarId: String, toAdd: Set[Appointment]): Future[Unit] = {
+    println(s"Adding ${toAdd.size} events to Google...")
+    toAdd.foreach(println)
+
     val events = toAdd map { appt =>
       new Event()
         .setStart(eventDate(appt.startDate, appt.isAllDay))

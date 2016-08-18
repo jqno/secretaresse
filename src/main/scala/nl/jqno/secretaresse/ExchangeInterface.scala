@@ -19,6 +19,8 @@ import scala.concurrent.{Future, blocking}
 class ExchangeInterface(config: Config) {
 
   def getAppointments(from: Date, to: Date): Future[Set[Appointment]] = Future {
+    println("Getting events from Exchange...")
+
     val service = new ExchangeService(ExchangeVersion.Exchange2010_SP2)
     val credentials = new WebCredentials(config.getString("exchange.userName"), config.getString("exchange.password"))
     service.setCredentials(credentials)
