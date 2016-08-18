@@ -19,19 +19,19 @@ class Secretaresse(configLocation: String) {
 
     println("Connecting to Google...")
     val google = new GoogleInterface(config)
-    val calendarId = google.getCalendarId(config.getString("google.calendarName"))
+    val calendarId = Await.result(google.getCalendarId(config.getString("google.calendarName")), 60.seconds)
     println("Getting events from Google...")
-    val googleAppointments = google.getAppointments(calendarId, startDate, endDate)
+    val googleAppointments = Await.result(google.getAppointments(calendarId, startDate, endDate), 60.seconds)
 
     val itemsToRemove = toRemove(exchangeAppointments, googleAppointments)
     println(s"Removing ${itemsToRemove.size} events from Google...")
     itemsToRemove foreach println
-    google.removeAppointments(calendarId, itemsToRemove)
+    Await.result(google.removeAppointments(calendarId, itemsToRemove), 60.seconds)
 
     val itemsToAdd = toAdd(exchangeAppointments, googleAppointments)
     println(s"Adding ${itemsToAdd.size} events to Google...")
     itemsToAdd foreach println
-    google.addAppointments(calendarId, itemsToAdd)
+    Await.result(google.addAppointments(calendarId, itemsToAdd), 60.seconds)
   }
 
   private def loadConfig: Config = {

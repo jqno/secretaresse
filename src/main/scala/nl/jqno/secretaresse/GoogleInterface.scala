@@ -4,8 +4,6 @@ import java.io.{File, FileReader}
 import java.text.SimpleDateFormat
 import java.util.{Date, TimeZone}
 
-import scala.collection.JavaConverters._
-
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver
 import com.google.api.client.googleapis.auth.oauth2.{GoogleAuthorizationCodeFlow, GoogleClientSecrets}
@@ -13,9 +11,14 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.client.util.DateTime
 import com.google.api.client.util.store.FileDataStoreFactory
-import com.google.api.services.calendar.{Calendar, CalendarScopes}
 import com.google.api.services.calendar.model.{Event, EventDateTime}
+import com.google.api.services.calendar.{Calendar, CalendarScopes}
 import com.typesafe.config.Config
+import nl.jqno.secretaresse.Util._
+
+import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class GoogleInterface(config: Config) {
 
@@ -46,31 +49,36 @@ class GoogleInterface(config: Config) {
         .build
   }
 
-  def getCalendarId(name: String): String = {
+  def getCalendarId(name: String): Future[String] = async {
     val calendars = service.calendarList.list.execute().getItems.asScala
     calendars.find(_.getSummary == name).get.getId
   }
 
-  def getAppointments(calendarId: String, from: Date, to: Date): Set[Appointment] = {
+  def getAppointments(calendarId: String, from: Date, to: Date): Future[Set[Appointment]] = {
     // list the next 10 items from the specified calendar
-    val events = service.events.list(calendarId)
+    val events = async {
+      service.events.list(calendarId)
         .setTimeMin(new DateTime(from))
         .setTimeMax(new DateTime(to))
         .setOrderBy("startTime")
         .setSingleEvents(true)
         .execute()
-        .getItems.asScala
-
-    val appointments = events map { event =>
-      val start = getGoogleDate(event.getStart)
-      val end = getGoogleDate(event.getEnd)
-      val summary = Option(event.getSummary) getOrElse ""
-      val location = Option(event.getLocation) getOrElse ""
-      val description = Option(event.getDescription) getOrElse ""
-      val isAllDay = event.getStart.getDateTime == null
-      Appointment(new Date(start.getValue), new Date(end.getValue), summary, location, description, isAllDay, Some(event.getId))
+        .getItems.asScala.toSet
     }
-    appointments.toSet
+
+    for {
+      e <- events
+    } yield e.map(convert)
+  }
+
+  private def convert(event: Event): Appointment = {
+    val start = getGoogleDate(event.getStart)
+    val end = getGoogleDate(event.getEnd)
+    val summary = Option(event.getSummary) getOrElse ""
+    val location = Option(event.getLocation) getOrElse ""
+    val description = Option(event.getDescription) getOrElse ""
+    val isAllDay = event.getStart.getDateTime == null
+    Appointment(new Date(start.getValue), new Date(end.getValue), summary, location, description, isAllDay, Some(event.getId))
   }
 
   private def getGoogleDate(edt: EventDateTime): DateTime = {
@@ -84,14 +92,18 @@ class GoogleInterface(config: Config) {
     }
   }
 
-  def removeAppointments(calendarId: String, toRemove: Set[Appointment]): Unit = {
-    toRemove foreach { appt => appt.googleId match {
-      case Some(id) => service.events.delete(calendarId, id).execute()
-      case _ => // do nothing
-    }}
+  def removeAppointments(calendarId: String, toRemove: Set[Appointment]): Future[Unit] = {
+    val ids = for {
+      appt <- toRemove
+      id <- appt.googleId
+    } yield id
+
+    executeInParallel(ids) { id =>
+      service.events.delete(calendarId, id).execute()
+    }
   }
 
-  def addAppointments(calendarId: String, toAdd: Set[Appointment]): Unit = {
+  def addAppointments(calendarId: String, toAdd: Set[Appointment]): Future[Unit] = {
     val events = toAdd map { appt =>
       new Event()
         .setStart(eventDate(appt.startDate, appt.isAllDay))
@@ -100,8 +112,9 @@ class GoogleInterface(config: Config) {
         .setLocation(appt.location)
         .setDescription(appt.body)
     }
-    events foreach { e =>
-      service.events.insert(calendarId, e).execute()
+
+    executeInParallel(events) { event =>
+      service.events.insert(calendarId, event).execute()
     }
   }
 
