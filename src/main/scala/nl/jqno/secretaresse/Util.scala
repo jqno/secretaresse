@@ -11,11 +11,15 @@ object Util {
   }
 
   def executeInParallel[T](xs: TraversableOnce[T])(f: T => Unit): Future[Unit] = {
-    def unit[T](a: T, b: T): Unit = ()
+    def unit[A](a: A, b: A): Unit = ()
 
     val tasks = xs map { x =>
       async { f(x) }
     }
-    Future.reduce(tasks)(unit)
+
+    if (tasks.isEmpty)
+      Future.successful(())
+    else
+      Future.reduce(tasks)(unit)
   }
 }

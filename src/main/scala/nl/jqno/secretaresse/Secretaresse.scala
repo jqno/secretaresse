@@ -5,38 +5,40 @@ import java.util.{Date, GregorianCalendar}
 
 import com.typesafe.config.{Config, ConfigFactory}
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class Secretaresse(configLocation: String) {
-  def sync(): Unit = {
+  def sync(): Future[Unit] = {
     val config = loadConfig
     val (startDate, endDate) = window(config.getInt("app.pastDays"), config.getInt("app.futureDays"))
-
-    println("Getting events from Exchange...")
     val exchange = new ExchangeInterface(config)
-    val exchangeAppointments = Await.result(exchange.getAppointments(startDate, endDate), 60.seconds)
-
-    println("Connecting to Google...")
     val google = new GoogleInterface(config)
-    val calendarId = Await.result(google.getCalendarId(config.getString("google.calendarName")), 60.seconds)
-    println("Getting events from Google...")
-    val googleAppointments = Await.result(google.getAppointments(calendarId, startDate, endDate), 60.seconds)
 
-    val itemsToRemove = toRemove(exchangeAppointments, googleAppointments)
-    println(s"Removing ${itemsToRemove.size} events from Google...")
-    itemsToRemove foreach println
-    Await.result(google.removeAppointments(calendarId, itemsToRemove), 60.seconds)
+    for {
+      _ <- output("Getting events from Exchange...")
+      exchangeAppointments <- exchange.getAppointments(startDate, endDate)
 
-    val itemsToAdd = toAdd(exchangeAppointments, googleAppointments)
-    println(s"Adding ${itemsToAdd.size} events to Google...")
-    itemsToAdd foreach println
-    Await.result(google.addAppointments(calendarId, itemsToAdd), 60.seconds)
+      _ <- output("Connecting to Google...")
+      calendarId <- google.getCalendarId(config.getString("google.calendarName"))
+      _ <- output("Getting events from Google...")
+      googleAppointments <- google.getAppointments(calendarId, startDate, endDate)
+
+      itemsToRemove = toRemove(exchangeAppointments, googleAppointments)
+      _ <- output(s"Removing ${itemsToRemove.size} events from Google...")
+      _ <- output(itemsToRemove)
+      _ <- google.removeAppointments(calendarId, itemsToRemove)
+
+      itemsToAdd = toAdd(exchangeAppointments, googleAppointments)
+      _ <- output(s"Adding ${itemsToAdd.size} events to Google...")
+      _ <- output(itemsToAdd)
+      _ <- google.addAppointments(calendarId, itemsToAdd)
+    } yield ()
   }
 
   private def loadConfig: Config = {
     // TODO: ceedubs ficus
-    println(s"Loading $configLocation")
+    output(s"Loading $configLocation")
     val externalConfig = ConfigFactory.parseFile(new File(configLocation))
     ConfigFactory.load(externalConfig)
   }
@@ -52,5 +54,8 @@ class Secretaresse(configLocation: String) {
 
   def toRemove(source: Set[Appointment], target: Set[Appointment]): Set[Appointment] = target -- source
   def toAdd(source: Set[Appointment], target: Set[Appointment]): Set[Appointment] = source -- target
+
+  def output(s: String): Future[Unit] = Future { println(s) }
+  def output[T](xs: TraversableOnce[T]) = Future { xs foreach println }
 }
 
