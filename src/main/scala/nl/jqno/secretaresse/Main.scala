@@ -10,7 +10,7 @@ object Main extends App {
 
   val secretaresse = new Secretaresse(args.headOption getOrElse "application.conf")
 
-  val task = Task(secretaresse.sync())
+  val scheduler = Scheduler(secretaresse.sync())
 
   Tray().createTray(
     tooltip = "Secretaresse app",
@@ -19,10 +19,10 @@ object Main extends App {
 
     actions = ListMap(
       ("Run now", e => secretaresse.sync()),
-      ("Run every 5 minutes", e => task.runEvery(5.minutes)),
-      ("Run every 30 minutes", e => task.runEvery(30.minutes)),
-      ("Run every hour", e => task.runEvery(1.hour)),
-      ("Stop running", e => task.stop())
+      ("Run every 5 minutes", e => scheduler.runEvery(5.minutes)),
+      ("Run every 30 minutes", e => scheduler.runEvery(30.minutes)),
+      ("Run every hour", e => scheduler.runEvery(1.hour)),
+      ("Stop running", e => scheduler.stop())
     ))
 
   while (true) {

@@ -4,14 +4,14 @@ import java.util.{Timer, TimerTask}
 
 import scala.concurrent.duration._
 
-class Task(supplier: => Unit) {
+class Scheduler(task: => Unit) {
 
   private var timer = new Timer()
 
   def runEvery(period: Duration) = {
     stop()
     timer.schedule(new TimerTask {
-      override def run(): Unit = supplier
+      override def run(): Unit = task
     }, 1.second.toMillis, period.toMillis)
 
   }
@@ -23,6 +23,6 @@ class Task(supplier: => Unit) {
   }
 }
 
-object Task {
-  def apply(task: => Unit): Task = new Task(task)
+object Scheduler {
+  def apply(task: => Unit): Scheduler = new Scheduler(task)
 }
