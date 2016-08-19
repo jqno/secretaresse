@@ -8,8 +8,6 @@ import scala.concurrent.duration._
 
 object Main extends App {
 
-  // To make the docIcon disappear http://stackoverflow.com/questions/5057639/systemtray-based-application-without-window-on-mac-os-x
-
   val secretaresse = new Secretaresse(args.headOption getOrElse "application.conf")
 
   val task = Task(Unit => secretaresse.sync())

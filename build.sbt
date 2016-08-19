@@ -18,4 +18,5 @@ appbundle.name := "Secretaresse"
 appbundle.javaVersion := "1.8+"
 appbundle.icon := Some(file("Secretaresse.png"))
 appbundle.workingDirectory := Some(file(appbundle.BundleVar_AppPackage))
-appbundle.target <<= target
+
+// To make the docIcon disappear http://stackoverflow.com/questions/5057639/systemtray-based-application-without-window-on-mac-os-x
