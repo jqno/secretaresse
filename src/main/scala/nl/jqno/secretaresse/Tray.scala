@@ -7,7 +7,9 @@ class Tray() {
 
   def createTray(tooltip: String, icon: Image, actions: Map[String, ActionEvent => Unit]): Unit = {
     val popup: PopupMenu = new PopupMenu()
+
     actions.foreach { case (title, action) => popup.add(createMenuItem(title, action))}
+
     popup.addSeparator()
     popup.add(createMenuItem("Quit", e => System.exit(0)))
 

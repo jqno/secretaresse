@@ -13,6 +13,9 @@ object Main extends App {
     tooltip = "Secretaresse app",
     icon = getDefaultToolkit.getImage(new URL("https://github.com/encharm/Font-Awesome-SVG-PNG/blob/master/white/png/64/calendar-check-o.png?raw=true")),
     actions = Map(
-      ("Run now", e => secretaresse.sync())
+      ("Run now", e => secretaresse.sync()),
+      ("Run every 5 minutes", e => secretaresse.sync()),
+      ("Run every 30 minutes", e => secretaresse.sync()),
+      ("Run every hour", e => secretaresse.sync())
     ))
 }
