@@ -17,15 +17,13 @@ class Secretaresse(configLocation: String) {
 
     for {
       exchangeAppointments <- exchange.getAppointments(startDate, endDate)
-
-      calendarId <- google.getCalendarId(config.getString("google.calendarName"))
-      googleAppointments <- google.getAppointments(calendarId, startDate, endDate)
+      googleAppointments <- google.getAppointments(startDate, endDate)
 
       itemsToRemove = toRemove(exchangeAppointments, googleAppointments)
-      _ <- google.removeAppointments(calendarId, itemsToRemove)
+      _ <- google.removeAppointments(itemsToRemove)
 
       itemsToAdd = toAdd(exchangeAppointments, googleAppointments)
-      _ <- google.addAppointments(calendarId, itemsToAdd)
+      _ <- google.addAppointments(itemsToAdd)
     } yield ()
   }
 

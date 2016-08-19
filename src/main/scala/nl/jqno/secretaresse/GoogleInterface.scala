@@ -14,15 +14,15 @@ import com.google.api.client.util.store.FileDataStoreFactory
 import com.google.api.services.calendar.model.{Event, EventDateTime}
 import com.google.api.services.calendar.{Calendar, CalendarScopes}
 import com.typesafe.config.Config
-import nl.jqno.secretaresse.Util._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent._
 
 class GoogleInterface(config: Config) {
 
   private lazy val service = buildGoogleCalendarService()
+  private lazy val calendarIdFut = getCalendarId(config.getString("google.calendarName"))
 
   private def buildGoogleCalendarService(): Calendar = {
     // global initializations
@@ -49,16 +49,16 @@ class GoogleInterface(config: Config) {
         .build
   }
 
-  def getCalendarId(name: String): Future[String] = async {
+  private def getCalendarId(name: String): Future[String] = nonblocking {
     val calendars = service.calendarList.list.execute().getItems.asScala
     calendars.find(_.getSummary == name).get.getId
   }
 
-  def getAppointments(calendarId: String, from: Date, to: Date): Future[Set[Appointment]] = {
+  def getAppointments(from: Date, to: Date): Future[Set[Appointment]] = {
     println("Getting events from Google...")
 
-    // list the next 10 items from the specified calendar
-    val events = async {
+    def go(calendarId: String): Set[Event] = {
+      // list the next 10 items from the specified calendar
       service.events.list(calendarId)
         .setTimeMin(new DateTime(from))
         .setTimeMax(new DateTime(to))
@@ -69,7 +69,8 @@ class GoogleInterface(config: Config) {
     }
 
     for {
-      e <- events
+      cal <- calendarIdFut
+      e <- nonblocking { go(cal) }
     } yield e.map(convert)
   }
 
@@ -94,21 +95,18 @@ class GoogleInterface(config: Config) {
     }
   }
 
-  def removeAppointments(calendarId: String, toRemove: Set[Appointment]): Future[Unit] = {
+  def removeAppointments(toRemove: Set[Appointment]): Future[Unit] = {
     println(s"Removing ${toRemove.size} events from Google...")
     toRemove.foreach(println)
 
-    val ids = for {
-      appt <- toRemove
-      id <- appt.googleId
-    } yield id
+    val ids = toRemove.flatMap(_.googleId)
 
-    executeInParallel(ids) { id =>
+    executeInParallel(ids) { (calendarId, id) =>
       service.events.delete(calendarId, id).execute()
     }
   }
 
-  def addAppointments(calendarId: String, toAdd: Set[Appointment]): Future[Unit] = {
+  def addAppointments(toAdd: Set[Appointment]): Future[Unit] = {
     println(s"Adding ${toAdd.size} events to Google...")
     toAdd.foreach(println)
 
@@ -121,7 +119,7 @@ class GoogleInterface(config: Config) {
         .setDescription(appt.body)
     }
 
-    executeInParallel(events) { event =>
+    executeInParallel(events) { (calendarId, event) =>
       service.events.insert(calendarId, event).execute()
     }
   }
@@ -135,4 +133,15 @@ class GoogleInterface(config: Config) {
     } else {
       new EventDateTime().setDateTime(new DateTime(date))
     }
+
+  private def executeInParallel[T](ts: TraversableOnce[T])(action: (String, T) => Unit): Future[Unit] = {
+    val flatten: TraversableOnce[Unit] => Unit = _ => ()
+    for {
+      calendarId <- calendarIdFut
+      tasks = ts.map(t => nonblocking { action(calendarId, t) })
+      unit <- Future.sequence(tasks).map(flatten)
+    } yield unit
+  }
+
+  private def nonblocking[T](code: => T): Future[T] = Future { blocking { code } }
 }
