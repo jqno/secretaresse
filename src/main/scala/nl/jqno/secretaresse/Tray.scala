@@ -5,20 +5,20 @@ import java.awt.event.{ActionEvent, ActionListener}
 
 import scala.collection.immutable.ListMap
 
-class Tray() {
+class Tray {
 
   def createTray(tooltip: String, icon: Image, actions: ListMap[String, ActionEvent => Unit]): Unit = {
     val popup: PopupMenu = new PopupMenu()
 
-    actions.foreach { case (title, action) => popup.add(createMenuItem(title, action))}
+    actions.foreach { case (title, action) => popup.add(createMenuItem(title, action)) }
 
     popup.addSeparator()
     popup.add(createMenuItem("Quit", e => System.exit(0)))
 
-    val trayIcon: TrayIcon = new TrayIcon(icon, tooltip, popup)
+    val trayIcon = new TrayIcon(icon, tooltip, popup)
     trayIcon.setImageAutoSize(true)
 
-    val tray: SystemTray = SystemTray.getSystemTray
+    val tray = SystemTray.getSystemTray
     tray.add(trayIcon)
   }
 
