@@ -4,6 +4,7 @@ import java.awt.Toolkit.getDefaultToolkit
 import java.net.URL
 
 import scala.collection.immutable.ListMap
+import scala.concurrent.duration._
 
 object Main extends App {
 
@@ -11,7 +12,7 @@ object Main extends App {
 
   val secretaresse = new Secretaresse(args.headOption getOrElse "application.conf")
 
-  val scheduler = Scheduler(Unit => secretaresse.sync())
+  val task = Task(Unit => secretaresse.sync())
 
   Tray().createTray(
     tooltip = "Secretaresse app",
@@ -20,12 +21,11 @@ object Main extends App {
 
     actions = ListMap(
       ("Run now", e => secretaresse.sync()),
-      ("Run every 5 minutes", e => scheduler.schedule(5 * 60 * 1000)),
-      ("Run every 30 minutes", e => scheduler.schedule(30 * 60 * 1000)),
-      ("Run every hour", e => scheduler.schedule(60 * 60 * 1000)),
-      ("Stop running", e => scheduler.stop())
+      ("Run every 5 minutes", e => task.runEvery(5 minutes)),
+      ("Run every 30 minutes", e => task.runEvery(30 minutes)),
+      ("Run every hour", e => task.runEvery(1 hour)),
+      ("Stop running", e => task.stop())
     ))
-
 
   while (true)
     Thread.sleep(30000)
