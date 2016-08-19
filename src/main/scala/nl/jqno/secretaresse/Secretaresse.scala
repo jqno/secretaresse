@@ -15,15 +15,18 @@ class Secretaresse(configLocation: String) {
     val exchange = new ExchangeInterface(config)
     val google = new GoogleInterface(config)
 
+    val exchangeAppointments = exchange.getAppointments(startDate, endDate)
+    val googleAppointments = google.getAppointments(startDate, endDate)
+
+    val itemsToAdd = action(exchangeAppointments, googleAppointments, toAdd)
+    val itemsToRemove = action(exchangeAppointments, googleAppointments, toRemove)
+
+    val added = itemsToAdd.flatMap(google.addAppointments)
+    val removed = itemsToRemove.flatMap(google.removeAppointments)
+
     for {
-      exchangeAppointments <- exchange.getAppointments(startDate, endDate)
-      googleAppointments <- google.getAppointments(startDate, endDate)
-
-      itemsToRemove = toRemove(exchangeAppointments, googleAppointments)
-      _ <- google.removeAppointments(itemsToRemove)
-
-      itemsToAdd = toAdd(exchangeAppointments, googleAppointments)
-      _ <- google.addAppointments(itemsToAdd)
+      _ <- added
+      _ <- removed
     } yield ()
   }
 
@@ -42,6 +45,12 @@ class Secretaresse(configLocation: String) {
     end.add(java.util.Calendar.DATE, daysFuture)
     (start.getTime, end.getTime)
   }
+
+  private def action[A](source: Future[Set[A]], target: Future[Set[A]], f: (Set[A], Set[A]) => Set[A]): Future[Set[A]] =
+    for {
+      s <- source
+      t <- target
+    } yield f(s, t)
 
   def toRemove(source: Set[Appointment], target: Set[Appointment]): Set[Appointment] = target -- source
   def toAdd(source: Set[Appointment], target: Set[Appointment]): Set[Appointment] = source -- target
