@@ -28,3 +28,9 @@ You need to set up a couple of things before you can run this code.
 * Did you remember to create a new Google Calendar? You'll lose your data if you don't! There is no undo.
 
 * Run the program with `sbt run`.
+
+* To create a fat jar run `sbt assembly`
+
+* To create a Mac appbundle run `sbt appbundle`. The app will appear in `/target`
+
+* Use this post if you get the notification that you need the Java SE 6 : [Fix SE 6 troubles](https://oliverdowling.com.au/2014/03/28/java-se-8-on-mac-os-x/)

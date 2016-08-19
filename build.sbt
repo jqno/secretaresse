@@ -18,5 +18,4 @@ appbundle.name := "Secretaresse"
 appbundle.javaVersion := "1.8+"
 appbundle.icon := Some(file("Secretaresse.png"))
 appbundle.workingDirectory := Some(file(appbundle.BundleVar_AppPackage))
-//appbundle.executable :=
 appbundle.target <<= target
