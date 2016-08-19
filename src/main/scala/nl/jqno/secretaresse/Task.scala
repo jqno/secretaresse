@@ -11,7 +11,7 @@ class Task(supplier: Unit => Unit) {
   def runEvery(period: Duration) = {
     stop()
     timer.schedule(new TimerTask {
-      override def run(): Unit = supplier()
+      override def run(): Unit = supplier(Unit)
     }, (1 second).toMillis, period.toMillis)
 
   }
