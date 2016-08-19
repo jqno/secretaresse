@@ -1,4 +1,4 @@
-name := "exchange"
+name := "Secretaresse"
 organization := "nl.jqno.exchange"
 version := "0.0.1-SNAPSHOT"
 
@@ -13,3 +13,10 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.3.0"
 )
 
+Seq(appbundle.settings: _*)
+appbundle.name := "Secretaresse"
+appbundle.javaVersion := "1.8+"
+appbundle.icon := Some(file("Secretaresse.png"))
+appbundle.workingDirectory := Some(file(appbundle.BundleVar_AppPackage))
+//appbundle.executable :=
+appbundle.target <<= target
