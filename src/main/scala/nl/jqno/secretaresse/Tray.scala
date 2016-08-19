@@ -3,9 +3,11 @@ package nl.jqno.secretaresse
 import java.awt._
 import java.awt.event.{ActionEvent, ActionListener}
 
+import scala.collection.immutable.ListMap
+
 class Tray() {
 
-  def createTray(tooltip: String, icon: Image, actions: Map[String, ActionEvent => Unit]): Unit = {
+  def createTray(tooltip: String, icon: Image, actions: ListMap[String, ActionEvent => Unit]): Unit = {
     val popup: PopupMenu = new PopupMenu()
 
     actions.foreach { case (title, action) => popup.add(createMenuItem(title, action))}
