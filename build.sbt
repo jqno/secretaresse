@@ -4,6 +4,7 @@ version := "0.0.1-SNAPSHOT"
 
 scalaVersion := "2.11.8"
 scalacOptions += "-deprecation"
+scalacOptions += "-feature"
 
 libraryDependencies ++= Seq(
   "com.microsoft.ews-java-api" % "ews-java-api" % "2.0",
