@@ -4,7 +4,6 @@ import java.awt.Toolkit.getDefaultToolkit
 import java.net.URL
 
 import scala.collection.immutable.ListMap
-import scala.concurrent.Await
 import scala.concurrent.duration._
 
 object Main extends App {
@@ -13,10 +12,7 @@ object Main extends App {
 
   val scheduler = Scheduler(run())
 
-  def run(): Unit = {
-    val fut = secretaresse.sync()
-    Await.result(fut, 120.seconds) //OMG
-  }
+  def run(): Unit = secretaresse.sync()
 
   Tray().createTray(
     tooltip = "Secretaresse app",
