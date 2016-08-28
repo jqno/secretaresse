@@ -4,11 +4,13 @@ import java.io.File
 import java.util.{Date, GregorianCalendar}
 
 import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.scalalogging.StrictLogging
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class Secretaresse(configLocation: String) {
+class Secretaresse(configLocation: String) extends StrictLogging {
+
   def sync(): Future[Unit] = {
     val config = loadConfig
     val (startDate, endDate) = window(config.getInt("app.pastDays"), config.getInt("app.futureDays"))
@@ -24,15 +26,15 @@ class Secretaresse(configLocation: String) {
     val added = itemsToAdd.flatMap(google.addAppointments)
     val removed = itemsToRemove.flatMap(google.removeAppointments)
 
-    for {
+    val actions = for {
       _ <- added
       _ <- removed
     } yield ()
+    actions.map(_ => logger.info("Done"))
   }
 
   private def loadConfig: Config = {
-    // TODO: ceedubs ficus
-    println(s"Loading $configLocation")
+    logger.info(s"Loading $configLocation")
     val externalConfig = ConfigFactory.parseFile(new File(configLocation))
     ConfigFactory.load(externalConfig)
   }

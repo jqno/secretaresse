@@ -10,7 +10,9 @@ libraryDependencies ++= Seq(
   "com.google.api-client" % "google-api-client" % "1.22.0",
   "com.google.oauth-client" % "google-oauth-client-jetty" % "1.22.0",
   "com.google.apis" % "google-api-services-calendar" % "v3-rev202-1.22.0",
-  "com.typesafe" % "config" % "1.3.0"
+  "com.typesafe" % "config" % "1.3.0",
+  "ch.qos.logback" % "logback-classic" % "1.1.7",
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.4.0"
 )
 
 Seq(appbundle.settings: _*)
