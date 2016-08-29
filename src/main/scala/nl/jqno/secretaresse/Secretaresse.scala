@@ -26,11 +26,11 @@ class Secretaresse(configLocation: String) extends StrictLogging {
     val added = itemsToAdd.flatMap(google.addAppointments)
     val removed = itemsToRemove.flatMap(google.removeAppointments)
 
-    val actions = for {
+    for {
       _ <- added
       _ <- removed
+      _ = logger.info("Done")
     } yield ()
-    actions.map(_ => logger.info("Done"))
   }
 
   private def loadConfig: Config = {
