@@ -3,16 +3,25 @@ package nl.jqno.secretaresse
 import java.awt.Toolkit.getDefaultToolkit
 import java.net.URL
 
-import scala.collection.immutable.ListMap
-import scala.concurrent.duration._
+import com.typesafe.scalalogging.StrictLogging
 
-object Main extends App {
+import scala.collection.immutable.ListMap
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.util.{Failure, Success}
+
+object Main extends App with StrictLogging {
 
   val secretaresse = new Secretaresse(args.headOption getOrElse "application.conf")
 
   val scheduler = Scheduler(run())
 
-  def run(): Unit = secretaresse.sync()
+  def run(): Unit = {
+    secretaresse.sync() onComplete {
+      case Success(()) => // do nothing
+      case Failure(e) => // show a popup or something
+    }
+  }
 
   Tray().createTray(
     tooltip = "Secretaresse app",

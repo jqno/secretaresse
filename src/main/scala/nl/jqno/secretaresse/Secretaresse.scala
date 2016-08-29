@@ -8,6 +8,7 @@ import com.typesafe.scalalogging.StrictLogging
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 class Secretaresse(configLocation: String) extends StrictLogging {
 
@@ -26,11 +27,15 @@ class Secretaresse(configLocation: String) extends StrictLogging {
     val added = itemsToAdd.flatMap(google.addAppointments)
     val removed = itemsToRemove.flatMap(google.removeAppointments)
 
-    for {
+    val result = for {
       _ <- added
       _ <- removed
-      _ = logger.info("Done")
     } yield ()
+    result onComplete {
+      case Success(()) => logger.info("Done")
+      case Failure(e) => logger.error("Error encountered", e)
+    }
+    result
   }
 
   private def loadConfig: Config = {
