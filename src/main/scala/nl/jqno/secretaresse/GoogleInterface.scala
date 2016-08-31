@@ -14,12 +14,13 @@ import com.google.api.client.util.store.FileDataStoreFactory
 import com.google.api.services.calendar.model.{Event, EventDateTime}
 import com.google.api.services.calendar.{Calendar, CalendarScopes}
 import com.typesafe.config.Config
+import com.typesafe.scalalogging.StrictLogging
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 
-class GoogleInterface(config: Config) {
+class GoogleInterface(config: Config) extends StrictLogging {
 
   private lazy val service = buildGoogleCalendarService()
   private lazy val calendarIdFut = getCalendarId(config.getString("google.calendarName"))
@@ -55,7 +56,7 @@ class GoogleInterface(config: Config) {
   }
 
   def getAppointments(from: Date, to: Date): Future[Set[Appointment]] = {
-    println("Getting events from Google...")
+    logger.info("Getting events from Google...")
 
     def go(calendarId: String): Set[Event] = {
       // list the next 10 items from the specified calendar
@@ -96,8 +97,8 @@ class GoogleInterface(config: Config) {
   }
 
   def removeAppointments(toRemove: Set[Appointment]): Future[Unit] = {
-    println(s"Removing ${toRemove.size} events from Google...")
-    toRemove.foreach(println)
+    logger.info(s"Removing ${toRemove.size} events from Google...")
+    toRemove.foreach(appt => logger.info(s"Removing $appt"))
 
     val ids = toRemove.flatMap(_.googleId)
 
@@ -107,8 +108,8 @@ class GoogleInterface(config: Config) {
   }
 
   def addAppointments(toAdd: Set[Appointment]): Future[Unit] = {
-    println(s"Adding ${toAdd.size} events to Google...")
-    toAdd.foreach(println)
+    logger.info(s"Adding ${toAdd.size} events to Google...")
+    toAdd.foreach(appt => logger.info(s"Adding $appt"))
 
     val events = toAdd map { appt =>
       new Event()

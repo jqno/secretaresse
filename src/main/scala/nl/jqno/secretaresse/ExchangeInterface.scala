@@ -4,6 +4,7 @@ import java.net.URI
 import java.util.Date
 
 import com.typesafe.config.Config
+import com.typesafe.scalalogging.StrictLogging
 import microsoft.exchange.webservices.data.core.enumeration.misc.ExchangeVersion
 import microsoft.exchange.webservices.data.core.enumeration.property.{BasePropertySet, BodyType, WellKnownFolderName}
 import microsoft.exchange.webservices.data.core.service.folder.CalendarFolder
@@ -16,10 +17,10 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, blocking}
 
-class ExchangeInterface(config: Config) {
+class ExchangeInterface(config: Config) extends StrictLogging {
 
   def getAppointments(from: Date, to: Date): Future[Set[Appointment]] = Future {
-    println("Getting events from Exchange...")
+    logger.info("Getting events from Exchange...")
 
     val service = new ExchangeService(ExchangeVersion.Exchange2010_SP2)
     val credentials = new WebCredentials(config.getString("exchange.userName"), config.getString("exchange.password"))
