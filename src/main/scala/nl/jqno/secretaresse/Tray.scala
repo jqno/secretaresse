@@ -2,6 +2,7 @@ package nl.jqno.secretaresse
 
 import java.awt._
 import java.awt.event.{ActionEvent, ActionListener}
+import java.lang.Runtime.getRuntime
 
 import scala.collection.immutable.ListMap
 
@@ -29,6 +30,11 @@ class Tray {
       override def actionPerformed(e: ActionEvent): Unit = action(e)
     })
     menuItem
+  }
+
+  def notifyUser(title: String): Unit = {
+    val command = """display notification "$title" sound name "Purr" """
+    getRuntime exec Array("osascript", "-e", command)
   }
 }
 
