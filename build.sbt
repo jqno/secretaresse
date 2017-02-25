@@ -12,7 +12,8 @@ libraryDependencies ++= Seq(
   "com.google.apis" % "google-api-services-calendar" % "v3-rev202-1.22.0",
   "com.typesafe" % "config" % "1.3.0",
   "ch.qos.logback" % "logback-classic" % "1.1.7",
-  "com.typesafe.scala-logging" %% "scala-logging" % "3.4.0"
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.4.0",
+  "org.scalafx" %% "scalafx" % "8.0.92-R10"
 )
 
 Seq(appbundle.settings: _*)
