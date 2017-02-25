@@ -2,13 +2,11 @@ hs.alert('Secretaresse app started')
 
 local secretaresseMenubar = hs.menubar.new()
 
-secretaresseMenubar:setTitle('Secretaresse')
+secretaresseMenubar:setTitle('S')
 secretaresseMenubar:setTooltip('Secretaresse - Not scheduled')
 
 secretaresseMenubar:setMenu({
   {title = "Run now", fn = function() runSecretaresse() end},
-  {title = "Schedule every 5 minutes", fn = function() startTimer(5) end},
-  {title = "Schedule every 30 minutes", fn = function() startTimer(30) end},
   {title = "Schedule every 2 hours", fn = function() startTimer(120) end},
   {title = "Turn off", fn = function() stopTimer() end}
 })
@@ -29,8 +27,11 @@ end
 
 function runSecretaresse()
   if secretaresseDir then
-    hs.execute('cd ' .. secretaresseDir .. ' && sbt run', true)
+    hs.execute('cd ' .. secretaresseDir .. ' && java -jar secretaresse.jar', true)
   else
     hs.alert('Do not forget to add the global variable secretaresseDir with the dir where the project lives.')
   end
 end
+
+startTimer(120)
+
