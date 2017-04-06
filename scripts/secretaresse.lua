@@ -27,7 +27,8 @@ end
 
 function runSecretaresse()
   if secretaresseDir then
-    hs.execute('cd ' .. secretaresseDir .. ' && java -jar secretaresse.jar', true)
+    local cmd = 'cd ' .. secretaresseDir .. ' && ./secretaresse.sh'
+    hs.execute(cmd, true)
   else
     hs.alert('Do not forget to add the global variable secretaresseDir with the dir where the project lives.')
   end

@@ -30,17 +30,19 @@ You need to set up a couple of things before you can run this code.
 * Run the program with `sbt run`.
 
 ### Periodically run Secretaresse with Hammerspoon
-To run Secretaresse periodically, simply include the hammerspoon `secretaresse.lua` to your `init.lua` script and tell it where your project lives.
+To run Secretaresse periodically, do the following things:
+
+* Create a fat jar with `sbt assembly`;
+* Copy the content of the `scripts` directory to a location of your choice;
+* Move the jar there too;
+* Move the `application.conf` and `client_secret.json` files there as well;
+* Add the following lines to your `init.lua`:
+
+
+simply include the hammerspoon `secretaresse.lua` to your `init.lua` script and tell it where your project lives.
+
 ```lua
-secretaresseDir = '../workspace/secretaresse'
-dofile("../secretaresse/secretaresse.lua")
-
--- Or this way
-secretaresseDir = '~/workspace/secretaresse'
-dofile(<ABSOLUTE-PATH> .. "/secretaresse/secretaresse.lua")
-
-
--- Or place secretaresse.lua in your hammerspoon dir and import it with:
-secretaresseDir = '~/workspace/secretaresse'
-require('secretaresse')
+secretaresseDir = '~/secretaresse'
+dofile("/Users/<your-username>/secretaresse/secretaresse.lua")
 ```
+
