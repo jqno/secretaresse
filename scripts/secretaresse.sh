@@ -3,7 +3,8 @@
 
 cd `dirname $0`
 
-JAVA_HOME="`/usr/libexec/java_home -v '1.8*'`" java -jar secretaresse.jar > ~/.secretaresse/secretaresse.log 2>&1
+JAVA_HOME="`/usr/libexec/java_home -v '1.8*'`"
+$JAVA_HOME/bin/java -jar secretaresse.jar > ~/.secretaresse/secretaresse.log 2>&1
 
 if [ $? -ne 0 ]
 then
